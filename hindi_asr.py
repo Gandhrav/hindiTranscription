@@ -8,6 +8,7 @@ import soundfile as sf
 import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor,Wav2Vec2ProcessorWithLM
 import subprocess, os
+from pydub import AudioSegment
 
 st.title("Hindi Audio Transcription App")
 
@@ -50,26 +51,29 @@ def parse(wav_file):
         logits = model(**input_values).logits
     return parse_transcription(logits)
 
+
 def process_long_audio(audio_object, segment_duration=200):
     transcription = ''
-    # Open the audio file
-    # os.makedirs('/content/temp', exist_ok=True)
-    # temp_dir = '/content/temp'
     temp_dir = tempfile.mkdtemp()
+    
+    # Save the audio data to a temporary file
     audio_temp_path = os.path.join(temp_dir, "audio_temp.wav")
-    with open(audio_temp_path, 'wb') as audio_file:
-        audio_file.write(audio_object.read())
+    audio_object.save(audio_temp_path)
 
+    audio = AudioSegment.from_wav(audio_temp_path)
+    
     segment_number = 0
-    while True:
-        segment = audio_file.read(1 * segment_duration * 1000)  # Read segment_duration seconds of audio
-        if not segment:
-            break  # Break the loop if there's no more audio to process
+    while len(audio) > 0:
+        if len(audio) > segment_duration * 1000:
+            segment = audio[:segment_duration * 1000]
+            audio = audio[segment_duration * 1000:]
+        else:
+            segment = audio
+            audio = AudioSegment.silent(duration=0)
 
         segment_path = os.path.join(temp_dir, f"segment_{segment_number}.wav")
-        with open(segment_path, 'wb') as segment_file:
-            segment_file.write(segment)  # Save the segment as a temporary file
-
+        segment.export(segment_path, format="wav")
+        
         transcript = parse(segment_path)  # Process the saved segment to get a transcript
         print(transcript)
         transcription += transcript + " "  # Concatenate the transcript to the transcription string with space
@@ -87,6 +91,7 @@ def process_long_audio(audio_object, segment_duration=200):
 
     # Remove the temporary directory
     shutil.rmtree(temp_dir)
+
     return transcription
 
 

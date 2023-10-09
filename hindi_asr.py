@@ -58,7 +58,7 @@ def parse(wav_file):
         logits = model(**input_values).logits
     return parse_transcription(logits)
 
-def process_long_audio(audio_object, segment_duration=200):
+def process_long_audio(audio_object, segment_duration=200, sample_rate=44100):
     transcription = ''
     temp_dir = tempfile.mkdtemp()
     
@@ -70,7 +70,6 @@ def process_long_audio(audio_object, segment_duration=200):
             break  # Break the loop if there's no more audio to process
 
         audio_data = np.frombuffer(chunk, dtype=np.int16)
-        sample_rate = audio_object.get("sample_rate")
 
         audio = AudioSegment(
             data=audio_data.tobytes(),

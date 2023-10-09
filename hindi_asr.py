@@ -1,6 +1,6 @@
 
 # !pip install pyctcdecode transformers datasets
-
+import tempfile
 import streamlit as st
 from huggingface_hub import notebook_login
 import soundfile as sf
@@ -52,8 +52,9 @@ def parse(wav_file):
 def process_long_audio(audio_path, segment_duration=200):
     transcription = ''
     # Open the audio file
-    os.makedirs('/content/temp', exist_ok=True)
-    temp_dir = '/content/temp'
+    # os.makedirs('/content/temp', exist_ok=True)
+    # temp_dir = '/content/temp'
+    temp_dir = tempfile.mkdtemp()
     with open(audio_path, 'rb') as audio_file:
         segment_number = 0
         while True:

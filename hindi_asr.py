@@ -62,34 +62,41 @@ def process_long_audio(audio_object, segment_duration=200):
     transcription = ''
     temp_dir = tempfile.mkdtemp()
     
-    audio_data = np.frombuffer(audio_object.read(), dtype=np.int16)
-    sample_rate = audio_object.get("sample_rate")
+    # Read audio data in chunks of a multiple of 2 bytes (element size for int16)
+    chunk_size = 2 * segment_duration * 1000
+    while True:
+        chunk = audio_object.read(chunk_size)
+        if not chunk:
+            break  # Break the loop if there's no more audio to process
 
-    audio = AudioSegment(
-        data=audio_data.tobytes(),
-        sample_width=audio_data.itemsize,
-        frame_rate=sample_rate,
-        channels=1  # Assuming mono audio
-    )
+        audio_data = np.frombuffer(chunk, dtype=np.int16)
+        sample_rate = audio_object.get("sample_rate")
 
-    segment_number = 0
-    while len(audio) > 0:
-        if len(audio) > segment_duration * 1000:
-            segment = audio[:segment_duration * 1000]
-            audio = audio[segment_duration * 1000:]
-        else:
-            segment = audio
-            audio = AudioSegment.silent(duration=0)
+        audio = AudioSegment(
+            data=audio_data.tobytes(),
+            sample_width=audio_data.itemsize,
+            frame_rate=sample_rate,
+            channels=1  # Assuming mono audio
+        )
 
-        segment_path = os.path.join(temp_dir, f"segment_{segment_number}.wav")
-        segment.export(segment_path, format="wav")
+        segment_number = 0
+        while len(audio) > 0:
+            if len(audio) > segment_duration * 1000:
+                segment = audio[:segment_duration * 1000]
+                audio = audio[segment_duration * 1000:]
+            else:
+                segment = audio
+                audio = AudioSegment.silent(duration=0)
 
-        # Process the saved segment to get a transcript (replace with your parse function)
-        transcript = parse(segment_path)
-        print(transcript)
-        transcription += transcript + " "  # Concatenate the transcript to the transcription string with space
+            segment_path = os.path.join(temp_dir, f"segment_{segment_number}.wav")
+            segment.export(segment_path, format="wav")
 
-        segment_number += 1
+            # Process the saved segment to get a transcript (replace with your parse function)
+            transcript = parse(segment_path)
+            print(transcript)
+            transcription += transcript + " "  # Concatenate the transcript to the transcription string with space
+
+            segment_number += 1
 
     # Remove temporary segment files
     for filename in os.listdir(temp_dir):

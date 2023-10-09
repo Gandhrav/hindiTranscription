@@ -1,6 +1,7 @@
 
 # !pip install pyctcdecode transformers datasets
 import tempfile
+import shutil
 import streamlit as st
 from huggingface_hub import notebook_login
 import soundfile as sf
@@ -49,43 +50,51 @@ def parse(wav_file):
         logits = model(**input_values).logits
     return parse_transcription(logits)
 
-def process_long_audio(audio_path, segment_duration=200):
+def process_long_audio(audio_object, segment_duration=200):
     transcription = ''
     # Open the audio file
     # os.makedirs('/content/temp', exist_ok=True)
     # temp_dir = '/content/temp'
     temp_dir = tempfile.mkdtemp()
-    with open(audio_path, 'rb') as audio_file:
-        segment_number = 0
-        while True:
-            segment = audio_file.read(1 * segment_duration * 1000)  # Read segment_duration seconds of audio
-            if not segment:
-                break  # Break the loop if there's no more audio to process
+    audio_temp_path = os.path.join(temp_dir, "audio_temp.wav")
+    with open(audio_temp_path, 'wb') as audio_file:
+        audio_file.write(audio_object.read())
 
-            segment_path = os.path.join(temp_dir, f"segment_{segment_number}.wav")
-            with open(segment_path, 'wb') as segment_file:
-                segment_file.write(segment)  # Save the segment as a temporary file
+    segment_number = 0
+    while True:
+        segment = audio_file.read(1 * segment_duration * 1000)  # Read segment_duration seconds of audio
+        if not segment:
+            break  # Break the loop if there's no more audio to process
 
-            transcript = parse(segment_path)  # Process the saved segment to get a transcript
-            print(transcript)
-            transcription += transcript + " "  # Concatenate the transcript to the transcription string with space
+        segment_path = os.path.join(temp_dir, f"segment_{segment_number}.wav")
+        with open(segment_path, 'wb') as segment_file:
+            segment_file.write(segment)  # Save the segment as a temporary file
 
-            segment_number += 1
+        transcript = parse(segment_path)  # Process the saved segment to get a transcript
+        print(transcript)
+        transcription += transcript + " "  # Concatenate the transcript to the transcription string with space
 
-    folder_path = temp_dir
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
+        segment_number += 1
+
+    # Remove the temporary audio file
+    os.remove(audio_temp_path)
+
+    # Remove temporary segment files
+    for filename in os.listdir(temp_dir):
+        file_path = os.path.join(temp_dir, filename)
         if os.path.isfile(file_path):
             os.remove(file_path)
 
+    # Remove the temporary directory
+    shutil.rmtree(temp_dir)
     return transcription
 
 
-audio_path = st.file_uploader("Upload an audio file", type=["mp3", "wav"])
-if audio_path is not None:
+audio_object = st.file_uploader("Upload an audio file", type=["mp3", "wav"])
+if audio_object is not None:
     transcription_button = st.button("Transcribe Audio")
     if transcription_button:
-        transcription = process_long_audio(audio_path)
+        transcription = process_long_audio(audio_object)
         st.write("Transcription:")
         st.write(transcription)
 

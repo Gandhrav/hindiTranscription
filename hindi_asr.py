@@ -8,7 +8,7 @@ import torch
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor,Wav2Vec2ProcessorWithLM
 import subprocess, os
 
-st.title("Hugging Face Wav2Vec2 Transcription App")
+st.title("Hindi Audio Transcription App")
 
 
 # Get the Hugging Face Hub API token from st secrets

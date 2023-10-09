@@ -85,7 +85,7 @@ audio_path = st.file_uploader("Upload an audio file", type=["mp3", "wav"])
 if audio_path is not None:
     transcription_button = st.button("Transcribe Audio")
     if transcription_button:
-        transcription = process_long_audio(audio_path.name)
+        transcription = process_long_audio(audio_path)
         st.write("Transcription:")
         st.write(transcription)
 

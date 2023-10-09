@@ -1,5 +1,6 @@
 
 # !pip install pyctcdecode transformers datasets
+import numpy as np
 import tempfile
 import shutil
 import streamlit as st
@@ -57,13 +58,19 @@ def parse(wav_file):
         logits = model(**input_values).logits
     return parse_transcription(logits)
 
-
-
 def process_long_audio(audio_object, segment_duration=200):
     transcription = ''
     temp_dir = tempfile.mkdtemp()
     
-    audio = AudioSegment.from_file(audio_object)
+    audio_data = np.frombuffer(audio_object.read(), dtype=np.int16)
+    sample_rate = audio_object.get("sample_rate")
+
+    audio = AudioSegment(
+        data=audio_data.tobytes(),
+        sample_width=audio_data.itemsize,
+        frame_rate=sample_rate,
+        channels=1  # Assuming mono audio
+    )
 
     segment_number = 0
     while len(audio) > 0:
@@ -76,8 +83,9 @@ def process_long_audio(audio_object, segment_duration=200):
 
         segment_path = os.path.join(temp_dir, f"segment_{segment_number}.wav")
         segment.export(segment_path, format="wav")
-        
-        transcript = parse(segment_path)  # Process the saved segment to get a transcript
+
+        # Process the saved segment to get a transcript (replace with your parse function)
+        transcript = parse(segment_path)
         print(transcript)
         transcription += transcript + " "  # Concatenate the transcript to the transcription string with space
 

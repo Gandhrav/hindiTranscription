@@ -52,16 +52,13 @@ def parse(wav_file):
     return parse_transcription(logits)
 
 
+
 def process_long_audio(audio_object, segment_duration=200):
     transcription = ''
     temp_dir = tempfile.mkdtemp()
     
-    # Save the audio data to a temporary file
-    audio_temp_path = os.path.join(temp_dir, "audio_temp.wav")
-    audio_object.save(audio_temp_path)
+    audio = AudioSegment.from_file(audio_object)
 
-    audio = AudioSegment.from_wav(audio_temp_path)
-    
     segment_number = 0
     while len(audio) > 0:
         if len(audio) > segment_duration * 1000:
@@ -80,9 +77,6 @@ def process_long_audio(audio_object, segment_duration=200):
 
         segment_number += 1
 
-    # Remove the temporary audio file
-    os.remove(audio_temp_path)
-
     # Remove temporary segment files
     for filename in os.listdir(temp_dir):
         file_path = os.path.join(temp_dir, filename)
@@ -93,7 +87,6 @@ def process_long_audio(audio_object, segment_duration=200):
     shutil.rmtree(temp_dir)
 
     return transcription
-
 
 audio_object = st.file_uploader("Upload an audio file", type=["mp3", "wav"])
 if audio_object is not None:

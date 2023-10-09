@@ -13,7 +13,7 @@ from pydub import AudioSegment
 import subprocess
 
 # Install FFmpeg using apt-get
-subprocess.run(["sudo", "apt-get", "install", "-y", "ffmpeg"])
+subprocess.run(["apt-get", "install", "-y", "ffmpeg"])
 
 
 st.title("Hindi Audio Transcription App")
